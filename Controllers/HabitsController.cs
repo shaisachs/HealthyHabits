@@ -3,20 +3,23 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using HealthyHabits.Models;
+using HealthyHabits.Dtos;
+using HealthyHabits.Translators;
 
 namespace HealthyHabits.Controllers
 {
     [Route("api/v1/habits")]
     [Authorize(AuthenticationSchemes = "RapidApi")]
-    public class HabitsController : BaseController<Habit>
+    public class HabitsController : BaseController<Habit, HabitDto>
     {
-        public HabitsController(HealthyHabitsContext context) :
-            base(context, (c) => c.Habits, "GetHabit")
+        public HabitsController(HealthyHabitsContext context,
+            BaseTranslator<Habit, HabitDto> translator) :
+            base(context, (c) => c.Habits, "GetHabit", translator)
         {
         }
 
         [HttpGet]
-        public BaseModelCollection<Habit> GetAll()
+        public BaseDtoCollection<Habit, HabitDto> GetAll()
         {
             return base.GetAllBase();
         }
@@ -28,13 +31,13 @@ namespace HealthyHabits.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] Habit item)
+        public IActionResult Create([FromBody] HabitDto item)
         {
             return base.CreateBase(item);
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update(long id, [FromBody] Habit newItem)
+        public IActionResult Update(long id, [FromBody] HabitDto newItem)
         {
             return base.UpdateBase(id, newItem);
         }

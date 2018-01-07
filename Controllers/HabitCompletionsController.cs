@@ -3,19 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using HealthyHabits.Models;
+using HealthyHabits.Dtos;
+using HealthyHabits.Translators;
 
 namespace HealthyHabits.Controllers
 {
     [Authorize(AuthenticationSchemes = "RapidApi")]
-    public class HabitCompletionsController : BaseController<HabitCompletion>
+    public class HabitCompletionsController : BaseController<HabitCompletion, HabitCompletionDto>
     {
-        public HabitCompletionsController(HealthyHabitsContext context) :
-            base(context, (c) => c.HabitCompletions, "GetHabitCompletion")
+        public HabitCompletionsController(HealthyHabitsContext context,
+            BaseTranslator<HabitCompletion, HabitCompletionDto> translator) :
+            base(context, (c) => c.HabitCompletions, "GetHabitCompletion", translator)
         {
         }
 
         [HttpGet("api/v1/habits/{habitId}/completions")]
-        public BaseModelCollection<HabitCompletion> GetAll(long habitId)
+        public BaseDtoCollection<HabitCompletion, HabitCompletionDto> GetAll(long habitId)
         {
             return base.GetAllBase(additionalFilter: (h) => h.HabitId == habitId );
         }
@@ -27,13 +30,13 @@ namespace HealthyHabits.Controllers
         }
 
         [HttpPost("api/v1/habits/{habitId}/completions")]
-        public IActionResult Create(long habitId, [FromBody] HabitCompletion item)
+        public IActionResult Create(long habitId, [FromBody] HabitCompletionDto item)
         {
             return base.CreateBase(item);
         }
 
         [HttpPut("api/v1/habits/{habitId}/completions/{id}")]
-        public IActionResult Update(long habitId, long id, [FromBody] HabitCompletion newItem)
+        public IActionResult Update(long habitId, long id, [FromBody] HabitCompletionDto newItem)
         {
             return base.UpdateBase(id, newItem);
         }

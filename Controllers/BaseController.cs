@@ -4,109 +4,121 @@ using Microsoft.AspNetCore.Mvc;
 using HealthyHabits.Models;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using HealthyHabits.Dtos;
+using HealthyHabits.Translators;
 
 namespace HealthyHabits.Controllers
 {
-    public abstract class BaseController<T> : Controller where T : BaseModel
+    public abstract class BaseController<TModel, TDto> : Controller
+        where TModel : BaseModel
+        where TDto : BaseDto<TModel>
     {
         private readonly HealthyHabitsContext _context;
-        private readonly Func<HealthyHabitsContext, DbSet<T>> _dbsetGetter;
+        private readonly Func<HealthyHabitsContext, DbSet<TModel>> _dbsetGetter;
         private readonly string _getSingularRouteName;
+        private readonly BaseTranslator<TModel, TDto> _translator;
 
         public BaseController(HealthyHabitsContext context, 
-            Func<HealthyHabitsContext, DbSet<T>> dbsetGetter,
-            string getSingularRouteName)
+            Func<HealthyHabitsContext, DbSet<TModel>> dbsetGetter,
+            string getSingularRouteName,
+            BaseTranslator<TModel, TDto> translator)
         {
             _context = context;
             _dbsetGetter = dbsetGetter;
             _getSingularRouteName = getSingularRouteName;
+            _translator = translator;
         }
 
-        protected BaseModelCollection<T> GetAllBase(Func<T, bool> additionalFilter = null)
+        protected BaseDtoCollection<TModel, TDto> GetAllBase(Func<TModel, bool> additionalFilter = null)
         {
-            Func<T, bool> predicate =
+            Func<TModel, bool> predicate =
                 (t) => IsOwnedByCurrentUser(t) &&
                     (additionalFilter == null ? true : additionalFilter(t));
 
-            var items = _dbsetGetter(_context).Where(predicate).ToList();
-            var answer = new BaseModelCollection<T>() { Items = items };
+            var models = _dbsetGetter(_context).Where(predicate).ToList();
+            var dtos = from model in models select _translator.Translate(model);
+            var answer = new BaseDtoCollection<TModel, TDto>() { Items = dtos };
 
             return answer;
         }
 
         protected IActionResult GetByIdBase(long id)
         {
-            var item = GetSingleItem(id);
+            var model = GetSingleItem(id);
 
-            if (item == null)
+            if (model == null)
             {
                 return NotFound();
             }
 
-            return new ObjectResult(item);
+            return new ObjectResult(_translator.Translate(model));
         }
 
-        protected IActionResult CreateBase(T item)
+        protected IActionResult CreateBase(TDto dto)
         {
-            if (item == null)
+            if (dto == null)
             {
                 return BadRequest();
             }
 
-            item.Created = DateTime.Now;
-            item.Creator = CurrentUserName();
+            var model = _translator.Translate(dto);
 
-            _dbsetGetter(_context).Add(item);
+            model.Created = DateTime.Now;
+            model.Creator = CurrentUserName();
+
+            _dbsetGetter(_context).Add(model);
             _context.SaveChanges();
 
-            return CreatedAtRoute(_getSingularRouteName, new { id = item.Id }, item);
+            return CreatedAtRoute(_getSingularRouteName, new { id = model.Id }, _translator.Translate(model));
         }
 
-        protected IActionResult UpdateBase(long id, T newItem)
+        protected IActionResult UpdateBase(long id, TDto newDto)
         {
-            if (newItem == null || newItem.Id != id)
+            if (newDto == null || newDto.Id != id)
             {
                 return BadRequest();
             }
 
-            var existingItem = GetSingleItem(id);
+            var newModel = _translator.Translate(newDto);
 
-            if (existingItem == null)
+            var existingModel = GetSingleItem(id);
+
+            if (existingModel == null)
             {
                 return NotFound();
             }
 
-            existingItem = UpdateExistingItem(existingItem, newItem);
+            existingModel = UpdateExistingItem(existingModel, newModel);
 
-            _dbsetGetter(_context).Update(existingItem);
+            _dbsetGetter(_context).Update(existingModel);
             _context.SaveChanges();
             return new NoContentResult();
         }
 
         protected IActionResult DeleteBase(long id)
         {
-            var existingItem = GetSingleItem(id);
-            if (existingItem == null)
+            var existingModel = GetSingleItem(id);
+            if (existingModel == null)
             {
                 return NotFound();
             }
 
-            _dbsetGetter(_context).Remove(existingItem);
+            _dbsetGetter(_context).Remove(existingModel);
             _context.SaveChanges();
             return new NoContentResult();
         }
 
-        protected abstract T UpdateExistingItem(T existingItem, T newItem);
+        protected abstract TModel UpdateExistingItem(TModel existingModel, TModel newModel);
 
-        protected T GetSingleItem(long id)
+        protected TModel GetSingleItem(long id)
         {
             return _dbsetGetter(_context).FirstOrDefault(t => t.Id == id && IsOwnedByCurrentUser(t));
         }
 
-        protected bool IsOwnedByCurrentUser(T item)
+        protected bool IsOwnedByCurrentUser(TModel model)
         {
-            return !string.IsNullOrEmpty(item.Creator) &&
-                item.Creator.Equals(CurrentUserName());
+            return !string.IsNullOrEmpty(model.Creator) &&
+                model.Creator.Equals(CurrentUserName());
         }
 
         protected string CurrentUserName()
