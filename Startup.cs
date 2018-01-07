@@ -17,6 +17,7 @@ namespace HealthyHabits
 {
     public class Startup
     {
+        
         public Startup(IConfiguration configuration, IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -25,17 +26,27 @@ namespace HealthyHabits
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
+
+            HostingEnvironment = env;
         }
 
         public IConfiguration Configuration { get; }
+        public IHostingEnvironment HostingEnvironment { get; }    
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddAuthentication().AddRapidApiAuthentication();
 
-            var connection = Configuration.GetConnectionString("defaultConnection");
-            services.AddDbContext<HealthyHabitsContext>(options => options.UseSqlServer(connection));
+            if (HostingEnvironment.IsDevelopment())
+            {
+                services.AddDbContext<HealthyHabitsContext>(opt => opt.UseInMemoryDatabase("HealthyHabits"));
+            }
+            else
+            {
+                var connection = Configuration.GetConnectionString("defaultConnection");
+                services.AddDbContext<HealthyHabitsContext>(options => options.UseSqlServer(connection));
+            }
 
             services.AddMvc();
             services.AddSingleton<IConfiguration>(Configuration);

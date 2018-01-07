@@ -9,5 +9,7 @@ namespace HealthyHabits.Models
         {
         }
 
+        public DbSet<Habit> Habits { get; set; }
+        public DbSet<HabitCompletion> HabitCompletions { get; set; }
     }
 }
