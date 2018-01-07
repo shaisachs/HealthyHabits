@@ -1,5 +1,6 @@
 using HealthyHabits.Models;
 using HealthyHabits.Dtos;
+using AutoMapper;
 
 namespace HealthyHabits.Translators
 {
@@ -7,14 +8,19 @@ namespace HealthyHabits.Translators
         where TModel : BaseModel
         where TDto : BaseDto<TModel>
     {
+        private readonly IMapper _mapper;
+        public BaseTranslator(IMapper mapper)
+        {
+            _mapper = mapper;
+        }
         public TDto Translate(TModel model)
         {
-            return default(TDto);
+            return _mapper.Map<TDto>(model);
         }
 
         public TModel Translate(TDto dto)
         {
-            return null;
+            return _mapper.Map<TModel>(dto);
         }
     }
 }

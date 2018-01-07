@@ -10,8 +10,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Swagger;
+using AutoMapper;
 using HealthyHabits.Models;
-
+using HealthyHabits.Translators;
+using HealthyHabits.Dtos;
 
 namespace HealthyHabits
 {
@@ -50,11 +52,16 @@ namespace HealthyHabits
 
             services.AddMvc();
             services.AddSingleton<IConfiguration>(Configuration);
+            services.AddAutoMapper(x=> x.AddProfile(new MappingsProfile()));
 
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "HealthyHabits API", Version = "v1" });
             });
+
+            // TODO: automate this piece
+            services.AddScoped<BaseTranslator<Habit, HabitDto>, HabitTranslator>();
+            services.AddScoped<BaseTranslator<HabitCompletion, HabitCompletionDto>, HabitCompletionTranslator>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
