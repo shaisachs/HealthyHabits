@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using HealthyHabits.Models;
 using HealthyHabits.Dtos;
 using HealthyHabits.Translators;
+using HealthyHabits.Repositories;
 
 namespace HealthyHabits.Controllers
 {
@@ -12,9 +13,8 @@ namespace HealthyHabits.Controllers
     [Authorize(AuthenticationSchemes = "RapidApi")]
     public class HabitsController : BaseController<Habit, HabitDto>
     {
-        public HabitsController(HealthyHabitsContext context,
-            BaseTranslator<Habit, HabitDto> translator) :
-            base(context, (c) => c.Habits, "GetHabit", translator)
+        public HabitsController(BaseTranslator<Habit, HabitDto> translator, HabitRepository repo) :
+            base("GetHabit", translator, repo)
         {
         }
 

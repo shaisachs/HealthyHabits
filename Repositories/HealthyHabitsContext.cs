@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using HealthyHabits.Models;
 
-namespace HealthyHabits.Models
+namespace HealthyHabits.Repositories
 {
     public class HealthyHabitsContext : DbContext
     {

@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using HealthyHabits.Dtos;
 using HealthyHabits.Translators;
+using HealthyHabits.Repositories;
 
 namespace HealthyHabits.Controllers
 {
@@ -13,29 +14,22 @@ namespace HealthyHabits.Controllers
         where TModel : BaseModel
         where TDto : BaseDto<TModel>
     {
-        private readonly HealthyHabitsContext _context;
-        private readonly Func<HealthyHabitsContext, DbSet<TModel>> _dbsetGetter;
         private readonly string _getSingularRouteName;
         private readonly BaseTranslator<TModel, TDto> _translator;
+        private readonly BaseRepository<TModel> _repo;
 
-        public BaseController(HealthyHabitsContext context, 
-            Func<HealthyHabitsContext, DbSet<TModel>> dbsetGetter,
-            string getSingularRouteName,
-            BaseTranslator<TModel, TDto> translator)
+        public BaseController(string getSingularRouteName,
+            BaseTranslator<TModel, TDto> translator,
+            BaseRepository<TModel> repo)
         {
-            _context = context;
-            _dbsetGetter = dbsetGetter;
             _getSingularRouteName = getSingularRouteName;
             _translator = translator;
+            _repo = repo;
         }
 
         protected BaseDtoCollection<TModel, TDto> GetAllBase(Func<TModel, bool> additionalFilter = null)
         {
-            Func<TModel, bool> predicate =
-                (t) => IsOwnedByCurrentUser(t) &&
-                    (additionalFilter == null ? true : additionalFilter(t));
-
-            var models = _dbsetGetter(_context).Where(predicate).ToList();
+            var models = _repo.GetAllItems(CurrentUserName(), additionalFilter);
             var dtos = from model in models select _translator.Translate(model);
             var answer = new BaseDtoCollection<TModel, TDto>() { Items = dtos };
 
@@ -44,7 +38,7 @@ namespace HealthyHabits.Controllers
 
         protected IActionResult GetByIdBase(long id)
         {
-            var model = GetSingleItem(id);
+            var model = _repo.GetSingleItem(id, CurrentUserName());
 
             if (model == null)
             {
@@ -63,11 +57,7 @@ namespace HealthyHabits.Controllers
 
             var model = _translator.Translate(dto);
 
-            model.Created = DateTime.Now;
-            model.Creator = CurrentUserName();
-
-            _dbsetGetter(_context).Add(model);
-            _context.SaveChanges();
+            model = _repo.CreateItem(model, CurrentUserName());
 
             return CreatedAtRoute(_getSingularRouteName, new { id = model.Id }, _translator.Translate(model));
         }
@@ -81,7 +71,7 @@ namespace HealthyHabits.Controllers
 
             var newModel = _translator.Translate(newDto);
 
-            var existingModel = GetSingleItem(id);
+            var existingModel = _repo.GetSingleItem(id, CurrentUserName());
 
             if (existingModel == null)
             {
@@ -89,37 +79,24 @@ namespace HealthyHabits.Controllers
             }
 
             existingModel = UpdateExistingItem(existingModel, newModel);
+            _repo.UpdateItem(existingModel);
 
-            _dbsetGetter(_context).Update(existingModel);
-            _context.SaveChanges();
             return new NoContentResult();
         }
 
         protected IActionResult DeleteBase(long id)
         {
-            var existingModel = GetSingleItem(id);
+            var existingModel = _repo.GetSingleItem(id, CurrentUserName());
             if (existingModel == null)
             {
                 return NotFound();
             }
 
-            _dbsetGetter(_context).Remove(existingModel);
-            _context.SaveChanges();
+            _repo.DeleteItem(existingModel);
             return new NoContentResult();
         }
 
         protected abstract TModel UpdateExistingItem(TModel existingModel, TModel newModel);
-
-        protected TModel GetSingleItem(long id)
-        {
-            return _dbsetGetter(_context).FirstOrDefault(t => t.Id == id && IsOwnedByCurrentUser(t));
-        }
-
-        protected bool IsOwnedByCurrentUser(TModel model)
-        {
-            return !string.IsNullOrEmpty(model.Creator) &&
-                model.Creator.Equals(CurrentUserName());
-        }
 
         protected string CurrentUserName()
         {

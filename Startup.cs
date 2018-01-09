@@ -14,6 +14,7 @@ using AutoMapper;
 using HealthyHabits.Models;
 using HealthyHabits.Translators;
 using HealthyHabits.Dtos;
+using HealthyHabits.Repositories;
 
 namespace HealthyHabits
 {
@@ -62,6 +63,8 @@ namespace HealthyHabits
             // TODO: automate this piece
             services.AddScoped<BaseTranslator<Habit, HabitDto>, HabitTranslator>();
             services.AddScoped<BaseTranslator<HabitCompletion, HabitCompletionDto>, HabitCompletionTranslator>();
+            services.AddScoped<HabitRepository, HabitRepository>();
+            services.AddScoped<HabitCompletionRepository, HabitCompletionRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
