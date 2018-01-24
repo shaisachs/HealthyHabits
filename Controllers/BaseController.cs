@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using HealthyHabits.Dtos;
 using HealthyHabits.Translators;
 using HealthyHabits.Repositories;
+using HealthyHabits.Validators;
 
 namespace HealthyHabits.Controllers
 {
@@ -16,15 +17,21 @@ namespace HealthyHabits.Controllers
     {
         private readonly string _getSingularRouteName;
         private readonly BaseTranslator<TModel, TDto> _translator;
+        private readonly BaseValidator<TModel> _validator;
         private readonly BaseRepository<TModel> _repo;
+        private readonly ValidationErrorTranslator _errorTranslator;
 
         public BaseController(string getSingularRouteName,
             BaseTranslator<TModel, TDto> translator,
-            BaseRepository<TModel> repo)
+            BaseValidator<TModel> validator,
+            BaseRepository<TModel> repo,
+            ValidationErrorTranslator errorTranslator)
         {
             _getSingularRouteName = getSingularRouteName;
+            _validator = validator;
             _translator = translator;
             _repo = repo;
+            _errorTranslator = errorTranslator;
         }
 
         protected BaseDtoCollection<TModel, TDto> GetAllBase(Func<TModel, bool> additionalFilter = null)
@@ -52,10 +59,21 @@ namespace HealthyHabits.Controllers
         {
             if (dto == null)
             {
-                return BadRequest();
+                return BadRequest(new ValidationErrorDtoCollection(ValidationErrorDto.NullCreateInput));
             }
 
             var model = _translator.Translate(dto);
+            if (model == null)
+            {
+                return BadRequest(new ValidationErrorDtoCollection(ValidationErrorDto.MalformedInput));                
+            }
+
+            var errors = _validator.ValidateForCreate(model, this.User);
+            if (errors != null && errors.Any())
+            {
+                var errorDtos = from error in errors select _errorTranslator.Translate(error);
+                return BadRequest(new ValidationErrorDtoCollection(errorDtos));
+            }
 
             model = _repo.CreateItem(model, CurrentUserName());
 
@@ -66,16 +84,26 @@ namespace HealthyHabits.Controllers
         {
             if (newDto == null || newDto.Id != id)
             {
-                return BadRequest();
+                return BadRequest(new ValidationErrorDtoCollection(ValidationErrorDto.NullUpdateInput));
             }
 
             var newModel = _translator.Translate(newDto);
+            if (newModel == null)
+            {
+                return BadRequest(new ValidationErrorDtoCollection(ValidationErrorDto.MalformedInput));                
+            }
 
             var existingModel = _repo.GetSingleItem(id, CurrentUserName());
-
             if (existingModel == null)
             {
                 return NotFound();
+            }
+
+            var errors = _validator.ValidateForUpdate(existingModel, newModel, this.User);
+            if (errors != null && errors.Any())
+            {
+                var errorDtos = from error in errors select _errorTranslator.Translate(error);
+                return BadRequest(new ValidationErrorDtoCollection(errorDtos));
             }
 
             existingModel = UpdateExistingItem(existingModel, newModel);
@@ -96,6 +124,7 @@ namespace HealthyHabits.Controllers
             return new NoContentResult();
         }
 
+        // todo: move this into a service class
         protected abstract TModel UpdateExistingItem(TModel existingModel, TModel newModel);
 
         protected string CurrentUserName()

@@ -6,6 +6,7 @@ using HealthyHabits.Models;
 using HealthyHabits.Dtos;
 using HealthyHabits.Translators;
 using HealthyHabits.Repositories;
+using HealthyHabits.Validators;
 
 namespace HealthyHabits.Controllers
 {
@@ -13,8 +14,12 @@ namespace HealthyHabits.Controllers
     [Authorize(AuthenticationSchemes = "RapidApi")]
     public class HabitsController : BaseController<Habit, HabitDto>
     {
-        public HabitsController(BaseTranslator<Habit, HabitDto> translator, HabitRepository repo) :
-            base("GetHabit", translator, repo)
+        public HabitsController(
+            BaseTranslator<Habit, HabitDto> translator,
+            BaseValidator<Habit> validator,
+            HabitRepository repo,
+            ValidationErrorTranslator errorTranslator) :
+            base("GetHabit", translator, validator, repo, errorTranslator)
         {
         }
 

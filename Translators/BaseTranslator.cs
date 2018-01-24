@@ -13,6 +13,7 @@ namespace HealthyHabits.Translators
         {
             _mapper = mapper;
         }
+        
         public TDto Translate(TModel model)
         {
             return _mapper.Map<TDto>(model);
@@ -20,7 +21,17 @@ namespace HealthyHabits.Translators
 
         public TModel Translate(TDto dto)
         {
-            return _mapper.Map<TModel>(dto);
+            TModel model = null;
+            try
+            {
+                model = _mapper.Map<TModel>(dto);
+            }
+            catch (AutoMapperMappingException)
+            {
+                model = null;
+            }
+
+            return model;
         }
     }
 }

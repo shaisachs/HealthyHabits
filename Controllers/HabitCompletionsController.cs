@@ -6,15 +6,19 @@ using HealthyHabits.Models;
 using HealthyHabits.Dtos;
 using HealthyHabits.Translators;
 using HealthyHabits.Repositories;
+using HealthyHabits.Validators;
 
 namespace HealthyHabits.Controllers
 {
     [Authorize(AuthenticationSchemes = "RapidApi")]
     public class HabitCompletionsController : BaseController<HabitCompletion, HabitCompletionDto>
     {
-        public HabitCompletionsController(BaseTranslator<HabitCompletion, HabitCompletionDto> translator,
-            HabitCompletionRepository repo) :
-            base("GetHabitCompletion", translator, repo)
+        public HabitCompletionsController(
+            BaseTranslator<HabitCompletion, HabitCompletionDto> translator,
+            BaseValidator<HabitCompletion> validator,
+            HabitCompletionRepository repo,
+            ValidationErrorTranslator errorTranslator) :
+            base("GetHabitCompletion", translator, validator, repo, errorTranslator)
         {
         }
 
@@ -33,18 +37,29 @@ namespace HealthyHabits.Controllers
         [HttpPost("api/v1/habits/{habitId}/completions")]
         public IActionResult Create(long habitId, [FromBody] HabitCompletionDto item)
         {
+            // todo: must be a better way to inject route parameters
+            if (item != null)
+            {
+                item.HabitId = habitId;
+            }
             return base.CreateBase(item);
         }
 
         [HttpPut("api/v1/habits/{habitId}/completions/{id}")]
         public IActionResult Update(long habitId, long id, [FromBody] HabitCompletionDto newItem)
         {
+            if (newItem != null)
+            {
+                newItem.HabitId = habitId;
+            }
             return base.UpdateBase(id, newItem);
         }
 
         [HttpDelete("api/v1/habits/{habitId}/completions/{id}")]
         public IActionResult Delete(long habitId, long id)
         {
+            // todo: verify that the completion id really belongs to this habit?
+            
             return base.DeleteBase(id);
         }
         

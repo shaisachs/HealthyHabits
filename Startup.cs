@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Swagger;
 using AutoMapper;
 using HealthyHabits.Models;
+using HealthyHabits.Validators;
 using HealthyHabits.Translators;
 using HealthyHabits.Dtos;
 using HealthyHabits.Repositories;
@@ -60,7 +61,10 @@ namespace HealthyHabits
                 c.SwaggerDoc("v1", new Info { Title = "HealthyHabits API", Version = "v1" });
             });
 
+            services.AddScoped<ValidationErrorTranslator, ValidationErrorTranslator>();
             // TODO: automate this piece
+            services.AddScoped<BaseValidator<Habit>, HabitValidator>();
+            services.AddScoped<BaseValidator<HabitCompletion>, HabitCompletionValidator>();
             services.AddScoped<BaseTranslator<Habit, HabitDto>, HabitTranslator>();
             services.AddScoped<BaseTranslator<HabitCompletion, HabitCompletionDto>, HabitCompletionTranslator>();
             services.AddScoped<HabitRepository, HabitRepository>();

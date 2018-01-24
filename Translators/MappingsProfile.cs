@@ -1,6 +1,7 @@
 using AutoMapper;
 using HealthyHabits.Models;
 using HealthyHabits.Dtos;
+using HealthyHabits.Validators;
 
 namespace HealthyHabits.Translators 
 {
@@ -11,6 +12,8 @@ namespace HealthyHabits.Translators
             CreateMap<Habit, HabitDto>()
                 .ReverseMap();
             CreateMap<HabitCompletion, HabitCompletionDto>()
+                .ReverseMap();
+            CreateMap<ValidationError, ValidationErrorDto>()
                 .ReverseMap();
         }
     }
