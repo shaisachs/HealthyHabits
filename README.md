@@ -21,3 +21,5 @@ POST /api/v1/habits/123/completions
 ```
 
 Full CRUD operations are available on both routes. Complete API documentation available at /swagger.
+
+Logo from [Sanja on openclipart](https://openclipart.org/detail/183893/simple-red-apple)
