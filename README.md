@@ -2,6 +2,10 @@
 
 An API to keep track of healthy habits on a daily basis.
 
+## APIs
+
+Following is a synopsis; for full details, check out the [Swagger doc](http://healthyhabitsapi.azurewebsites.net/swagger/)
+
 Creating a habit:
 
 ```
