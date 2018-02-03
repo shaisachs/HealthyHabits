@@ -1,6 +1,6 @@
 # HealthyHabits
 
-An API to keep track of healthy habits on a daily basis.
+An API to keep track of healthy habits on a daily basis. Read more about it on [my blog](https://shaisachs.github.io/2018/02/03/healthyhabits-fleshing-out-api-stack.html?src=github)!
 
 ## APIs
 
